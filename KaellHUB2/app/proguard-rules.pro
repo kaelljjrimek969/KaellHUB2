@@ -1,0 +1,4 @@
+-keep class com.kaelltzyy.kaellhub.model.** { *; }
+-keep class com.kaelltzyy.kaellhub.core.wine.** { *; }
+-dontwarn okhttp3.**
+-dontwarn okio.**
