@@ -31,6 +31,7 @@ class ComponentAdapter(
         val isDone = done[comp.id] ?: false
         val err  = errors[comp.id]
 
+        holder.b.btnInstall.setOnClickListener { onInstall(comp) }   // always set (Retry needs it too)
         holder.b.tvName.text = comp.name
         holder.b.tvDesc.text = comp.description
         holder.b.tvVersion.text = "v${comp.version}"
@@ -57,7 +58,6 @@ class ComponentAdapter(
                 holder.b.btnInstall.text = if (comp.required) "Install (Required)" else "Install"
                 holder.b.btnInstall.isEnabled = true
                 holder.b.progressBar.visibility = View.GONE
-                holder.b.btnInstall.setOnClickListener { onInstall(comp) }
             }
         }
     }

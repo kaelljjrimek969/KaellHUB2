@@ -5,7 +5,12 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
+import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Bundle
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.kaelltzyy.kaellhub.core.wine.ComponentCatalog
@@ -25,6 +30,7 @@ class ComponentsActivity : AppCompatActivity() {
             val done = intent.getBooleanExtra(DownloadService.EXTRA_DONE, false)
             val err  = intent.getStringExtra(DownloadService.EXTRA_ERROR)
             adapter.updateProgress(id, pct, done, err)
+            if (err != null) Toast.makeText(this@ComponentsActivity, "Gagal: $err", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -48,11 +54,24 @@ class ComponentsActivity : AppCompatActivity() {
                 }
             },
             onInstall = { comp ->
-                startService(Intent(this, DownloadService::class.java).apply {
-                    putExtra(DownloadService.EXTRA_COMPONENT_ID, comp.id)
-                })
+                adapter.updateProgress(comp.id, 0, false, null)   // instant feedback
+                try {
+                    ContextCompat.startForegroundService(
+                        this,
+                        Intent(this, DownloadService::class.java)
+                            .putExtra(DownloadService.EXTRA_COMPONENT_ID, comp.id)
+                    )
+                } catch (e: Exception) {
+                    adapter.updateProgress(comp.id, -1, false, e.message ?: "gagal start service")
+                }
             }
         )
+
+        if (Build.VERSION.SDK_INT >= 33 &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
+                .launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
 
         b.rvComponents.layoutManager = LinearLayoutManager(this)
         b.rvComponents.adapter = adapter
