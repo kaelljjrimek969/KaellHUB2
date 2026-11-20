@@ -41,9 +41,23 @@ object WineLauncher {
                 pb.command().addAll(0, listOf("taskset", "-c", game.cpuAffinity))
             }
             val proc = pb.start()
-            LaunchResult(proc.pid(), null)
+            LaunchResult(getPid(proc), null)
         } catch (e: Exception) {
             LaunchResult(-1, e.message)
+        }
+    }
+
+    private fun getPid(proc: Process): Int {
+        return try {
+            val f = proc.javaClass.getDeclaredField("pid")
+            f.isAccessible = true
+            f.getInt(proc)
+        } catch (_: Exception) {
+            try {
+                val f = proc.javaClass.getDeclaredField("handle")
+                f.isAccessible = true
+                f.getLong(proc).toInt()
+            } catch (_: Exception) { -1 }
         }
     }
 }

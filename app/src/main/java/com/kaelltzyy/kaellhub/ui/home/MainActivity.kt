@@ -4,13 +4,13 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import com.kaelltzyy.kaellhub.R
 import com.kaelltzyy.kaellhub.core.gpu.GpuDetector
 import com.kaelltzyy.kaellhub.core.perf.PerfMonitor
-import com.kaelltzyy.kaellhub.core.wine.WineEnv
 import com.kaelltzyy.kaellhub.databinding.ActivityMainBinding
 import com.kaelltzyy.kaellhub.model.Game
 import com.kaelltzyy.kaellhub.ui.components.ComponentsActivity
@@ -24,6 +24,22 @@ class MainActivity : AppCompatActivity() {
     private lateinit var b: ActivityMainBinding
     private lateinit var adapter: GameAdapter
     private val games = mutableListOf<Game>()
+
+    private val pickExeLauncher = registerForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri ?: return@registerForActivityResult
+        val path = uri.path ?: return@registerForActivityResult
+        val name = File(path).nameWithoutExtension
+        val game = Game(
+            id = System.currentTimeMillis().toString(),
+            name = name,
+            exePath = path
+        )
+        games.add(game)
+        adapter.submitList(games.toList())
+        b.tvEmptyState.visibility = android.view.View.GONE
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -71,10 +87,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun loadGames() {
-        // load from SharedPreferences — simple JSON list
         val prefs = getSharedPreferences("kaellhub", MODE_PRIVATE)
         val raw = prefs.getString("games", "[]") ?: "[]"
-        // parse minimal — prod would use Gson/Moshi
         b.tvEmptyState.visibility = if (games.isEmpty())
             android.view.View.VISIBLE else android.view.View.GONE
         adapter.submitList(games.toList())
@@ -95,28 +109,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun pickExe() {
-        val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
-            type = "*/*"
-            addCategory(Intent.CATEGORY_OPENABLE)
-        }
-        startActivityForResult(intent, REQ_PICK_EXE)
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == REQ_PICK_EXE && resultCode == RESULT_OK) {
-            val uri = data?.data ?: return
-            val path = uri.path ?: return
-            val name = File(path).nameWithoutExtension
-            val game = Game(
-                id = System.currentTimeMillis().toString(),
-                name = name,
-                exePath = path
-            )
-            games.add(game)
-            adapter.submitList(games.toList())
-            b.tvEmptyState.visibility = android.view.View.GONE
-        }
+        pickExeLauncher.launch("*/*")
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -133,6 +126,4 @@ class MainActivity : AppCompatActivity() {
             else -> super.onOptionsItemSelected(item)
         }
     }
-
-    companion object { const val REQ_PICK_EXE = 101 }
 }

@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.os.Build
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -37,9 +38,15 @@ class ComponentsActivity : AppCompatActivity() {
         val components = ComponentCatalog.all
         adapter = ComponentAdapter(
             components = components,
-            isInstalled = { WineEnv::class.java.getDeclaredMethod(
-                "is${it.id.replaceFirstChar { c -> c.uppercase() }}Installed", Context::class.java
-            ).invoke(WineEnv, this) as Boolean },
+            isInstalled = { comp ->
+                when (comp.id) {
+                    "wine"  -> WineEnv.isWineInstalled(this)
+                    "box64" -> WineEnv.isBox64Installed(this)
+                    "dxvk"  -> WineEnv.isDxvkInstalled(this)
+                    "virgl" -> WineEnv.isVirglInstalled(this)
+                    else    -> false
+                }
+            },
             onInstall = { comp ->
                 startService(Intent(this, DownloadService::class.java).apply {
                     putExtra(DownloadService.EXTRA_COMPONENT_ID, comp.id)
@@ -50,8 +57,12 @@ class ComponentsActivity : AppCompatActivity() {
         b.rvComponents.layoutManager = LinearLayoutManager(this)
         b.rvComponents.adapter = adapter
 
-        registerReceiver(progressReceiver, IntentFilter(DownloadService.ACTION_PROGRESS),
-            RECEIVER_NOT_EXPORTED)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(progressReceiver, IntentFilter(DownloadService.ACTION_PROGRESS),
+                Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            registerReceiver(progressReceiver, IntentFilter(DownloadService.ACTION_PROGRESS))
+        }
     }
 
     override fun onSupportNavigateUp(): Boolean { onBackPressedDispatcher.onBackPressed(); return true }
