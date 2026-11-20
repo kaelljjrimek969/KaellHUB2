@@ -43,10 +43,10 @@ object ComponentCatalog {
             id = "virgl",
             name = "VirGL (Mali/all GPU)",
             description = "OpenGL over Vulkan — recommended for Mali GPUs",
-            downloadUrl = "https://github.com/alexvorxx/VirGL-mesa-android/releases/download/v24.1/virgl-mesa-24.1-arm64.tar.gz",
+            downloadUrl = "https://github.com/alexvorxx/Mesa-VirGL/releases/download/v0.0.3/libvirgl_test_server.so",
             installDir = "virgl",
             required = false,
-            version = "24.1"
+            version = "24.10.24"
         )
     )
 
